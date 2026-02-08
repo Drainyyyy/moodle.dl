@@ -1,10 +1,18 @@
 {
   "manifest_version": 3,
-  "name": "moodle.download",
+  "name": "moodle.dl",
   "version": "1.0.0",
   "description": "Mass download Moodle course materials with folder structure preservation",
-  "permissions": ["downloads", "storage", "activeTab", "notifications"],
-  "host_permissions": ["https://*/*", "http://*/*"],
+  "permissions": [
+    "downloads",
+    "storage",
+    "activeTab",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
   "default_locale": "en",
   "icons": {
     "16": "icons/icon16.png",
@@ -13,8 +21,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*/*", "http://*/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://*/*",
+        "http://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ]

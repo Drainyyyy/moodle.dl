@@ -1,5 +1,5 @@
 {
-  "name": "moodle.download",
+  "name": "moodle.dl",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -32,8 +32,8 @@
     "@types/firefox-webext-browser": "^120.0.3",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20.17.0",
-    "@typescript-eslint/eslint-plugin": "^8.18.1",
-    "@typescript-eslint/parser": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
     "@vitest/coverage-v8": "^2.1.8",
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
