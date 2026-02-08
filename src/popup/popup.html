@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>moodle.download</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="brand">
+          <img class="logo" src="icons/icon48.png" alt="moodle.download" />
+          <div class="brand-text">
+            <div class="title" data-i18n="popupTitle"></div>
+            <div class="subtitle">moodle.download</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="btnReset" class="btn btn-ghost" type="button" data-i18n="resetTracking"></button>
+        </div>
+      </header>
+
+      <section id="telemetryPanel" class="panel hidden" role="dialog" aria-modal="true">
+        <div class="panel-title" data-i18n="telemetryOptIn"></div>
+        <div class="panel-actions">
+          <button id="telemetryNo" class="btn btn-ghost" type="button" data-i18n="no"></button>
+          <button id="telemetryYes" class="btn" type="button" data-i18n="yes"></button>
+        </div>
+      </section>
+
+      <section class="controls">
+        <label class="check">
+          <input id="chkOnlyNew" type="checkbox" />
+          <span data-i18n="onlyNewFiles"></span>
+        </label>
+
+        <div class="control-row">
+          <button id="btnSelectAll" class="btn btn-ghost" type="button" data-i18n="selectAll"></button>
+          <button id="btnDeselectAll" class="btn btn-ghost" type="button" data-i18n="deselectAll"></button>
+        </div>
+
+        <div class="control-row">
+          <button id="btnChooseFolder" class="btn btn-ghost" type="button" data-i18n="chooseFolder"></button>
+          <button id="btnDownload" class="btn" type="button" data-i18n="downloadAsZip"></button>
+        </div>
+      </section>
+
+      <section class="status">
+        <div id="statusText" class="status-text">...</div>
+        <div class="progress">
+          <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+        </div>
+      </section>
+
+      <main class="list" id="resourceList" aria-live="polite"></main>
+
+      <section id="errorPanel" class="error hidden">
+        <div id="errorText" class="error-text"></div>
+        <div class="error-actions">
+          <button id="btnRetry" class="btn" type="button" data-i18n="retry"></button>
+        </div>
+      </section>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

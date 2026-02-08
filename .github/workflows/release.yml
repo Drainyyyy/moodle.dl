@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build:all
+
+      # ZIP für Chrome
+      - name: Create Chrome ZIP
+        run: cd dist/chrome && zip -r ../../moodle-download-chrome.zip . && cd ../..
+
+      # ZIP für Firefox (Service Worker)
+      - name: Create Firefox ZIP
+        run: cd dist/firefox && zip -r ../../moodle-download-firefox.zip . && cd ../..
+
+      # ZIP für Firefox (Compat)
+      - name: Create Firefox Compat ZIP
+        run: cd dist/firefox-compat && zip -r ../../moodle-download-firefox-compat.zip . && cd ../..
+
+      # GitHub Release erstellen
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            moodle-download-chrome.zip
+            moodle-download-firefox.zip
+            moodle-download-firefox-compat.zip
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
