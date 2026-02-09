@@ -22,7 +22,7 @@ import {
   getExtApi,
   guessFileType,
   joinZipPath,
-  normalizeUrl,
+  normalizeUrlKey,
   roundDateToDayISO,
   sanitizeFileName,
   withConcurrency,
@@ -153,7 +153,7 @@ async function expandFolderResource(folder: MoodleResource): Promise<MoodleResou
   const links = extractLinksFromHtml(html, folder.url);
   const dedup = new Map<string, { url: string; name?: string }>();
   for (const l of links) {
-    const key = normalizeUrl(l.url);
+    const key = normalizeUrlKey(l.url);
     if (!dedup.has(key)) dedup.set(key, l);
   }
 
@@ -222,7 +222,18 @@ async function waitForDownloadComplete(downloadId: number): Promise<void> {
 }
 
 async function getTracking(): Promise<DownloadTrackingMap> {
-  return (await storage.get(STORAGE_KEYS.downloadTracking)) || {};
+  const map: DownloadTrackingMap = (await storage.get(STORAGE_KEYS.downloadTracking)) || {};
+
+  // Migration: older versions used less strict URL normalization.
+  let changed = false;
+  const migrated: DownloadTrackingMap = {};
+  for (const [k, v] of Object.entries(map)) {
+    const nk = normalizeUrlKey(k);
+    migrated[nk] = v;
+    if (nk !== k) changed = true;
+  }
+  if (changed) await setTracking(migrated);
+  return migrated;
 }
 
 async function setTracking(map: DownloadTrackingMap): Promise<void> {
@@ -274,7 +285,7 @@ async function buildZip(resources: MoodleResource[], options: ZipBuildOptions): 
   let completed = 0;
 
   await withConcurrency(files, 3, async (file) => {
-    const normalized = normalizeUrl(file.url);
+    const normalized = normalizeUrlKey(file.url);
     try {
       sendToPopup({ type: 'MD_PROGRESS', phase: 'fetch', current: completed, total, fileName: file.name });
 

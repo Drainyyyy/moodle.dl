@@ -1,14 +1,13 @@
 {
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html"
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "moodle.dl@example.com",
+      "id": "moodle.download@example.com",
       "strict_min_version": "115.0"
     }
   }

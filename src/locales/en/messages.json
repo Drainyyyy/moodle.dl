@@ -7,7 +7,10 @@
   "downloadAsZip": { "message": "Download as ZIP" },
   "chooseFolder": { "message": "Choose Save Location" },
   "downloadStarted": { "message": "Download started..." },
-  "downloadComplete": { "message": "Download completed: \\$COUNT\\$ files" },
+  "downloadComplete": {
+    "message": "Download completed: $COUNT$ files",
+    "placeholders": { "count": { "content": "$1" } }
+  },
   "telemetryOptIn": { "message": "Share anonymous usage statistics to improve moodle.download?" },
   "onlyNewFiles": { "message": "Show only new files (not yet downloaded)" },
   "resetTracking": { "message": "Reset download history" },
@@ -16,7 +19,7 @@
   "no": { "message": "No" },
   "retry": { "message": "Retry" },
   "loading": { "message": "Loading..." },
-  "ready": { "message": "Ready: \\$COUNT\\$ items" },
+  "ready": { "message": "Ready: $COUNT$ items", "placeholders": { "count": { "content": "$1" } } },
   "noMoodleDetected": { "message": "This page doesn't look like Moodle (still trying to extract files)." },
   "noResourcesFound": { "message": "No downloadable resources found on this page." },
   "nothingSelected": { "message": "Nothing selected." },
@@ -27,7 +30,10 @@
   "error": { "message": "Error." },
   "new": { "message": "new" },
   "downloaded": { "message": "done" },
-  "someFilesFailed": { "message": "Some files failed (\\$COUNT\\$). You can retry." },
+  "someFilesFailed": {
+    "message": "Some files failed ($COUNT$). You can retry.",
+    "placeholders": { "count": { "content": "$1" } }
+  },
   "trackingResetDone": { "message": "Download history reset." },
   "noActiveTab": { "message": "No active tab." }
 }

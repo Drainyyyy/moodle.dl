@@ -1,5 +1,4 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -34,13 +33,17 @@ function manifestGeneratorPlugin(target: BuildTarget, env: Record<string, string
 
       const browserSpecific = await readJson(path.resolve(resolveManifestPath(target, env)));
 
+      // Single source of truth for version: package.json (env override supported for CI).
+      const pkg = await readJson(path.resolve('package.json'));
+
       const merged: any = {
         ...base,
         ...browserSpecific,
-        name: env.VITE_EXT_NAME || base.name,
-        version: env.VITE_EXT_VERSION || base.version,
-        description: env.VITE_EXT_DESCRIPTION || base.description,
+        version: env.VITE_EXT_VERSION || pkg.version || base.version,
       };
+
+      // If locales exist, Chrome requires default_locale.
+      merged.default_locale = merged.default_locale || 'en';
 
       // MV2 compat: remove MV3-only fields and ensure host permissions are in permissions.
       if (merged.manifest_version === 2) {
@@ -51,6 +54,42 @@ function manifestGeneratorPlugin(target: BuildTarget, env: Record<string, string
       }
 
       await fs.writeFile(path.join(outDir, 'manifest.json'), JSON.stringify(merged, null, 2));
+    },
+  };
+}
+
+function copyPopupAndLocalesPlugin(): Plugin {
+  return {
+    name: 'moodle-download-copy-assets',
+    async writeBundle(options) {
+      const outDir = options.dir || '';
+      if (!outDir) return;
+
+      async function copyFile(srcRel: string, destRel: string): Promise<void> {
+        const src = path.resolve(srcRel);
+        const dest = path.join(outDir, destRel);
+        await fs.mkdir(path.dirname(dest), { recursive: true });
+        await fs.copyFile(src, dest);
+      }
+
+      // Popup HTML/CSS
+      await copyFile('src/popup/popup.html', 'popup.html');
+      await copyFile('src/popup/popup.css', 'popup.css');
+
+      // i18n locales MUST be at: dist/<target>/_locales/<lang>/messages.json
+      const localesRoot = path.resolve('src/locales');
+      let dirs: string[] = [];
+      try {
+        dirs = (await fs.readdir(localesRoot, { withFileTypes: true }))
+          .filter((d) => d.isDirectory())
+          .map((d) => d.name);
+      } catch {
+        dirs = [];
+      }
+
+      for (const lang of dirs) {
+        await copyFile(`src/locales/${lang}/messages.json`, `_locales/${lang}/messages.json`);
+      }
     },
   };
 }
@@ -102,16 +141,7 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    plugins: [
-      viteStaticCopy({
-        targets: [
-          { src: 'src/popup/popup.html', dest: '' },
-          { src: 'src/popup/popup.css', dest: '' },
-          { src: 'src/locales', dest: '_locales' },
-        ],
-      }),
-      manifestGeneratorPlugin(target, env),
-    ],
+    plugins: [copyPopupAndLocalesPlugin(), manifestGeneratorPlugin(target, env)],
     define: {
       'process.env.NODE_ENV': JSON.stringify(mode),
     },

@@ -22,7 +22,7 @@
 
 body {
   margin: 0;
-  width: 420px;
+  width: 440px;
   max-height: 600px;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
     "Segoe UI Emoji";
@@ -111,18 +111,57 @@ body {
   margin-top: 8px;
 }
 
-.check {
+
+.toggle {
   display: flex;
-  gap: 8px;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 12px;
   color: var(--text);
+  user-select: none;
 }
 
-.check input {
-  width: 14px;
-  height: 14px;
-  accent-color: var(--green-600);
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-label {
+  line-height: 1.2;
+}
+
+.toggle-track {
+  width: 42px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.toggle-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.70);
+  transform: translateX(0);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.toggle input:checked + .toggle-track {
+  border-color: rgba(78, 163, 50, 0.55);
+  background: rgba(78, 163, 50, 0.20);
+}
+
+.toggle input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(20px);
+  background: rgba(145, 212, 90, 0.95);
 }
 
 .btn {
@@ -196,11 +235,16 @@ body {
 
 .row {
   display: grid;
-  grid-template-columns: 18px 36px 1fr 66px;
+  grid-template-columns: 18px 34px 1fr auto;
   align-items: center;
   gap: 8px;
   padding: 10px;
   border-bottom: 1px solid var(--border);
+  transition: background 0.12s ease;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .row:last-child {
@@ -269,6 +313,36 @@ body {
   font-size: 11px;
   color: var(--muted);
   text-align: right;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.pill-new {
+  border-color: rgba(145, 212, 90, 0.35);
+  background: rgba(145, 212, 90, 0.12);
+}
+
+.pill-done {
+  border-color: rgba(163, 167, 179, 0.22);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(163, 167, 179, 0.95);
+}
+
+.pill-size {
+  border-color: rgba(244, 159, 44, 0.30);
+  background: rgba(244, 159, 44, 0.10);
 }
 
 .path {

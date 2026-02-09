@@ -8,7 +8,7 @@ import type {
 } from '../shared/types';
 import { DEFAULT_ZIP_NAME } from '../shared/constants';
 import { extAsync } from '../shared/ext';
-import { getExtApi, normalizeUrl, sanitizeFileName, toErrorMessage } from '../shared/utils';
+import { getExtApi, normalizeUrlKey, sanitizeFileName, toErrorMessage } from '../shared/utils';
 
 const ext = getExtApi();
 
@@ -21,6 +21,7 @@ let resources: MoodleResource[] = [];
 let tracking: DownloadTrackingMap = {};
 let onlyNew = false;
 let selected = new Set<string>();
+let selectedBeforeOnlyNew: Set<string> | null = null;
 let saveTarget: SaveTarget = { mode: 'downloads', saveAs: true };
 let lastFailedUrls: string[] = [];
 
@@ -64,7 +65,7 @@ async function sendToBackground(msg: MessageToBackground): Promise<MessageFromBa
 }
 
 function isResourceNew(r: MoodleResource): boolean {
-  const key = normalizeUrl(r.url);
+  const key = normalizeUrlKey(r.url);
   return !tracking[key];
 }
 
@@ -108,6 +109,7 @@ function renderList(): void {
     const badgeClass = (r.fileType || 'file').toLowerCase();
 
     const meta = r.size ? formatBytes(r.size) : isResourceNew(r) ? i18n('new') : i18n('downloaded');
+    const metaClass = r.size ? 'pill-size' : isResourceNew(r) ? 'pill-new' : 'pill-done';
 
     row.innerHTML = `
       <input type="checkbox" ${checked ? 'checked' : ''} data-id="${r.id}" />
@@ -116,7 +118,7 @@ function renderList(): void {
         <div class="name" title="${r.name}">${r.name}</div>
         <div class="path" title="${r.path}">${r.path || ''}</div>
       </div>
-      <div class="meta">${meta}</div>
+      <div class="meta"><span class="pill ${metaClass}">${meta}</span></div>
     `;
 
     const cb = row.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
@@ -254,6 +256,11 @@ async function startDownload(selectedResources: MoodleResource[]): Promise<void>
 
     // Refresh tracking after download
     await loadTracking();
+
+    if (onlyNew) {
+      // When filtering to only-new, refresh selection to avoid checking already-downloaded items.
+      selected = new Set(getVisibleResources().map((r) => r.id));
+    }
     renderList();
 
     const okCount = selectedResources.filter((r) => !lastFailedUrls.includes(r.url)).length;
@@ -285,7 +292,11 @@ function attachEventHandlers(): void {
     onlyNew = (e.target as HTMLInputElement).checked;
 
     if (onlyNew) {
+      selectedBeforeOnlyNew = new Set(selected);
       selected = new Set(resources.filter(isResourceNew).map((r) => r.id));
+    } else if (selectedBeforeOnlyNew) {
+      selected = new Set(selectedBeforeOnlyNew);
+      selectedBeforeOnlyNew = null;
     }
 
     renderList();

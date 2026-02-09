@@ -1,12 +1,13 @@
 {
-  "name": "moodle.dl",
-  "version": "1.0.0",
+  "name": "moodle.download",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "license": "MIT",
   "description": "Mass download Moodle course materials with folder structure preservation",
   "scripts": {
     "prepare:version": "node scripts/sync-version.mjs",
+    "version:set": "node scripts/set-version.mjs",
     "dev": "cross-env VITE_ENABLE_SOURCEMAPS=true VITE_BUILD_TARGET=chrome node scripts/build.mjs --watch",
     "prebuild:chrome": "cross-env VITE_BUILD_TARGET=chrome node scripts/sync-version.mjs",
     "build:chrome": "cross-env VITE_BUILD_TARGET=chrome node scripts/build.mjs",
@@ -46,7 +47,6 @@
     "prettier": "^3.4.2",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
-    "vite-plugin-static-copy": "^1.0.6",
     "vitest": "^2.1.8"
   }
 }

@@ -7,7 +7,10 @@
   "downloadAsZip": { "message": "Als ZIP herunterladen" },
   "chooseFolder": { "message": "Speicherort wählen" },
   "downloadStarted": { "message": "Download gestartet..." },
-  "downloadComplete": { "message": "Download abgeschlossen: \\$COUNT\\$ Dateien" },
+  "downloadComplete": {
+    "message": "Download abgeschlossen: $COUNT$ Dateien",
+    "placeholders": { "count": { "content": "$1" } }
+  },
   "telemetryOptIn": { "message": "Möchtest du anonyme Nutzungsstatistiken teilen, um moodle.download zu verbessern?" },
   "onlyNewFiles": { "message": "Nur neue Dateien anzeigen (noch nicht heruntergeladen)" },
   "resetTracking": { "message": "Download-Verlauf zurücksetzen" },
@@ -16,7 +19,7 @@
   "no": { "message": "Nein" },
   "retry": { "message": "Erneut versuchen" },
   "loading": { "message": "Lade..." },
-  "ready": { "message": "Bereit: \\$COUNT\\$ Einträge" },
+  "ready": { "message": "Bereit: $COUNT$ Einträge", "placeholders": { "count": { "content": "$1" } } },
   "noMoodleDetected": { "message": "Diese Seite wirkt nicht wie Moodle (ich versuche trotzdem Dateien zu finden)." },
   "noResourcesFound": { "message": "Keine herunterladbaren Ressourcen auf dieser Seite gefunden." },
   "nothingSelected": { "message": "Nichts ausgewählt." },
@@ -27,7 +30,10 @@
   "error": { "message": "Fehler." },
   "new": { "message": "neu" },
   "downloaded": { "message": "fertig" },
-  "someFilesFailed": { "message": "Einige Dateien sind fehlgeschlagen (\\$COUNT\\$). Du kannst es erneut versuchen." },
+  "someFilesFailed": {
+    "message": "Einige Dateien sind fehlgeschlagen ($COUNT$). Du kannst es erneut versuchen.",
+    "placeholders": { "count": { "content": "$1" } }
+  },
   "trackingResetDone": { "message": "Download-Verlauf wurde zurückgesetzt." },
   "noActiveTab": { "message": "Kein aktiver Tab." }
 }

@@ -65,6 +65,43 @@ export function normalizeUrl(url: string, base?: string): string {
   }
 }
 
+/**
+ * Canonical URL key used for deduplication + local download tracking.
+ *
+ * Moodle often appends volatile query params (e.g. sesskey, forcedownload, redirect)
+ * which would otherwise break "already downloaded" detection.
+ */
+export function normalizeUrlKey(url: string, base?: string): string {
+  try {
+    const u = new URL(url, base || globalThis.location?.href);
+    u.hash = '';
+
+    // Drop volatile params that do not identify the actual file.
+    const drop = [
+      'sesskey',
+      'token',
+      'forcedownload',
+      'redirect',
+      'cachebuster',
+      '_',
+      'ts',
+      't',
+    ];
+    for (const k of drop) u.searchParams.delete(k);
+
+    // Sort remaining params for stable keys.
+    const sorted = new URLSearchParams();
+    const entries = Array.from(u.searchParams.entries()).sort(([a], [b]) => a.localeCompare(b));
+    for (const [k, v] of entries) sorted.append(k, v);
+    const qs = sorted.toString();
+    u.search = qs ? `?${qs}` : '';
+
+    return u.toString();
+  } catch {
+    return normalizeUrl(url, base);
+  }
+}
+
 export function getFileExtensionFromUrl(url: string): string | undefined {
   try {
     const u = new URL(url);
@@ -154,7 +191,7 @@ export function dedupeResources(resources: MoodleResource[]): MoodleResource[] {
   const seen = new Set<string>();
   const out: MoodleResource[] = [];
   for (const r of resources) {
-    const key = normalizeUrl(r.url);
+    const key = normalizeUrlKey(r.url);
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(r);
