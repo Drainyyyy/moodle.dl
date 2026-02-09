@@ -1,6 +1,6 @@
 {
   "name": "moodle.download",
-  "version": "1.0.1",
+  "version": "1.0.11",
   "private": true,
   "type": "module",
   "license": "MIT",

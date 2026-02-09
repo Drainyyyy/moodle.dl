@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 
+
+## [1.0.11] - 2026-02-09
+### Added
+- TODO
+
+### Changed
+- None
+
+### Fixed
+- None
+
+### Removed
+- None
+
 ## [1.0.1] - 2026-02-09
 ### Added
 - Fix Chrome Plugin import
