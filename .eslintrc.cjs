@@ -1,40 +1,66 @@
+/* eslint-env node */
 module.exports = {
   root: true,
+
   env: {
-    browser: true,
-    node: true,
     es2022: true,
-    webextensions: true,
+    browser: true,
   },
+
+  // Default parser – für TS Overrides wird er ergänzt
   parser: '@typescript-eslint/parser',
+
   parserOptions: {
-    project: ['./tsconfig.json'],
-    tsconfigRootDir: __dirname,
-    ecmaVersion: 2022,
+    ecmaVersion: 'latest',
     sourceType: 'module',
   },
-  extends: ['airbnb-base', 'airbnb-typescript/base', 'prettier'],
-  plugins: ['@typescript-eslint', 'import'],
-  rules: {
-    // Browser extensions often log for diagnostics; gate logs via feature flag in code.
-    'no-console': 'off',
-    // Vite/TS bundler handles extensions.
-    'import/extensions': 'off',
-    'import/no-extraneous-dependencies': [
-      'error',
-      {
-        devDependencies: ['**/*.config.ts', 'vite.config.ts', 'vitest.config.ts', 'tests/**', 'scripts/**'],
-      },
-    ],
-  },
+
+  plugins: ['@typescript-eslint'],
+
+  // ❗️WICHTIG: KEINE "requiring-type-checking" Regeln hier oben!
+  extends: [
+    'airbnb-base',
+    'plugin:@typescript-eslint/recommended',
+    'prettier',
+  ],
+
   overrides: [
+    // ✅ Type-aware Linting NUR für TS/TSX
     {
-      files: ['scripts/**/*.mjs'],
+      files: ['**/*.ts', '**/*.tsx'],
+      extends: [
+        'airbnb-typescript/base',
+        'plugin:@typescript-eslint/recommended-requiring-type-checking',
+      ],
+      parser: '@typescript-eslint/parser',
       parserOptions: {
-        project: null,
+        project: ['./tsconfig.json'],
+        tsconfigRootDir: __dirname,
+      },
+    },
+
+    // ✅ Node-Skripte (mjs/js) ohne TS-Type-Regeln
+    {
+      files: ['scripts/**/*.mjs', 'scripts/**/*.js', '**/*.mjs', '**/*.js'],
+      env: { node: true, browser: false },
+      parser: 'espree',
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
       },
       rules: {
-        'import/no-extraneous-dependencies': 'off',
+        // alles TypeScript-spezifische aus
+        '@typescript-eslint/await-thenable': 'off',
+        '@typescript-eslint/no-floating-promises': 'off',
+        '@typescript-eslint/no-misused-promises': 'off',
+        '@typescript-eslint/restrict-template-expressions': 'off',
+        '@typescript-eslint/require-await': 'off',
+        '@typescript-eslint/dot-notation': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-call': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
+        '@typescript-eslint/no-unsafe-return': 'off',
       },
     },
   ],
