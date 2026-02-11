@@ -8,6 +8,8 @@
   <a href="../../actions/workflows/test.yml"><img alt="Test" src="../../actions/workflows/test.yml/badge.svg" /></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-green.svg" /></a>
   <img alt="Manifest" src="https://img.shields.io/badge/manifest-MV3-blue" />
+  <a href="https://github.com/Drainyyyy/moodle.dl/graphs/traffic"><img alt="Repo views" src="https://komarev.com/ghpvc/?username=Drainyyyy&repo=moodle.dl&label=Repo%20views" /></a>
+  <a href="https://github.com/Drainyyyy/moodle.dl/releases"><img alt="Release downloads" src="https://img.shields.io/github/downloads/Drainyyyy/moodle.dl/total" /></a>
 </p>
 
 Browser extension (Chrome + Firefox) to **mass-download Moodle course materials** with **folder structure preservation** and **ZIP export**.
