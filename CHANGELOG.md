@@ -54,3 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - TODO
+
+
+## [1.1.0] - 2026-02-11
+### Fixed
+- build ZIPs in the service worker and save via downloads API
+- popup only triggers build in downloads mode
+- expand ZIP payload types
