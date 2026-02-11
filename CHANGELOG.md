@@ -37,3 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - None
+
+
+## [1.0.14] - 2026-02-11
+### Added
+- TODO
