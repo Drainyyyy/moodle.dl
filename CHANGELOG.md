@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.13] - 2026-02-11
 ### Added
 - Firefox MV2 compat build target (`firefox-compat`)
 
@@ -12,14 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Popup UI: dark theme, flat styling, hard corners, and per-file type labels
 - Popup UI: GitHub repository link in header
 - Popup list: file-type badge class sanitization (e.g. `7z`), keeping type sorting stable
-
-
-## [1.0.13] - 2026-02-11
-### Added
-- TODO
-
-### Changed
-- None
 
 ### Fixed
 - None
