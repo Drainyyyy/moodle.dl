@@ -77,16 +77,7 @@ export function normalizeUrlKey(url: string, base?: string): string {
     u.hash = '';
 
     // Drop volatile params that do not identify the actual file.
-    const drop = [
-      'sesskey',
-      'token',
-      'forcedownload',
-      'redirect',
-      'cachebuster',
-      '_',
-      'ts',
-      't',
-    ];
+    const drop = ['sesskey', 'token', 'forcedownload', 'redirect', 'cachebuster', '_', 'ts', 't'];
     for (const k of drop) u.searchParams.delete(k);
 
     // Sort remaining params for stable keys.
@@ -211,7 +202,9 @@ export async function withConcurrency<T, R>(
     while (idx < items.length) {
       const current = idx;
       idx += 1;
-      results[current] = await worker(items[current], current);
+      const item = items[current];
+      if (item === undefined) continue;
+      results[current] = await worker(item, current);
     }
   }
 

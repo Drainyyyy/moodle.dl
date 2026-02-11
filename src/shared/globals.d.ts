@@ -5,6 +5,8 @@
  * are bundled as classic IIFEs (non-module) for MV3/MV2 compatibility.
  */
 
+/* eslint-disable @typescript-eslint/naming-convention */
+
 declare const __MD_ENABLE_TELEMETRY__: boolean;
 declare const __MD_STATS_API_URL__: string;
 declare const __MD_STATS_API_KEY__: string;

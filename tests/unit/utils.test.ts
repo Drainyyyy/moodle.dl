@@ -12,7 +12,7 @@ describe('calculateHash', () => {
 
 describe('sanitizeFileName', () => {
   it('should remove illegal characters', () => {
-    expect(sanitizeFileName('a/b:c*?"<>|')).toBe('a_b_c____');
+    expect(sanitizeFileName('a/b:c*?"<>|')).toBe('a_b_c______');
   });
 
   it('should return fallback for empty', () => {

@@ -25,10 +25,7 @@ function parseArg(name) {
 
 const watch = process.argv.includes('--watch');
 const target =
-  parseArg('target') ||
-  process.env.VITE_BUILD_TARGET ||
-  process.env.npm_config_target ||
-  'chrome';
+  parseArg('target') || process.env.VITE_BUILD_TARGET || process.env.npm_config_target || 'chrome';
 
 const entries = ['background', 'content', 'popup'];
 const viteBin = path.resolve('node_modules', 'vite', 'bin', 'vite.js');
@@ -64,13 +61,13 @@ function waitExit(child) {
 const children = [];
 
 function teardown() {
-  for (const c of children) {
+  children.forEach((child) => {
     try {
-      c.kill('SIGINT');
+      child.kill('SIGINT');
     } catch {
       // ignore
     }
-  }
+  });
 }
 
 process.on('SIGINT', () => {
@@ -84,24 +81,18 @@ process.on('SIGTERM', () => {
 
 if (watch) {
   // Watch mode: run 3 builds concurrently.
-  for (let i = 0; i < entries.length; i += 1) {
-    const child = spawnBuild(entries[i], i === 0);
+  entries.forEach((entry, idx) => {
+    const child = spawnBuild(entry, idx === 0);
     children.push(child);
-  }
-  // keep alive
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    // Node event loop will stay alive because children are running.
-    // Sleep via a never-resolving promise.
-    // eslint-disable-next-line no-await-in-loop
-    await new Promise(() => {});
-  }
+  });
+  // Keep alive while child processes are running.
+  await new Promise(() => {});
 } else {
   // CI/Release mode: run sequentially to keep logs tidy.
-  for (let i = 0; i < entries.length; i += 1) {
-    const child = spawnBuild(entries[i], i === 0);
+  await entries.reduce(async (prev, entry, idx) => {
+    await prev;
+    const child = spawnBuild(entry, idx === 0);
     children.push(child);
-    // eslint-disable-next-line no-await-in-loop
     await waitExit(child);
-  }
+  }, Promise.resolve());
 }

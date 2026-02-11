@@ -203,6 +203,9 @@ async function postTelemetryIfEnabled(stats: DownloadStats, optIn: boolean): Pro
   }
 }
 
+async function setTracking(map: DownloadTrackingMap): Promise<void> {
+  await storage.set(STORAGE_KEYS.downloadTracking, map);
+}
 
 async function getTracking(): Promise<DownloadTrackingMap> {
   const map: DownloadTrackingMap = (await storage.get(STORAGE_KEYS.downloadTracking)) || {};
@@ -219,10 +222,6 @@ async function getTracking(): Promise<DownloadTrackingMap> {
   return migrated;
 }
 
-async function setTracking(map: DownloadTrackingMap): Promise<void> {
-  await storage.set(STORAGE_KEYS.downloadTracking, map);
-}
-
 async function getTelemetryPref(): Promise<{ asked: boolean; optIn: boolean }> {
   const asked = (await storage.get(STORAGE_KEYS.telemetryAsked)) || false;
   const optIn = (await storage.get(STORAGE_KEYS.telemetryOptIn)) || false;
@@ -234,10 +233,40 @@ async function setTelemetryPref(optIn: boolean): Promise<void> {
   await storage.set(STORAGE_KEYS.telemetryOptIn, optIn);
 }
 
+function getExtFromUrl(url: string): string | undefined {
+  try {
+    const u = new URL(url);
+    const last = u.pathname.split('/').pop() || '';
+    const dot = last.lastIndexOf('.');
+    if (dot <= 0) return undefined;
+    const extension = last.slice(dot + 1).toLowerCase();
+    return extension || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function ensureNameHasExt(name: string, extension?: string): string {
+  const clean = sanitizeFileName(name);
+  if (!extension) return clean;
+  if (clean.toLowerCase().endsWith(`.${extension.toLowerCase()}`)) return clean;
+  // If name already has some extension, keep it
+  if (/\.[a-z0-9]{1,5}$/i.test(clean)) return clean;
+  return `${clean}.${extension}`;
+}
+
+function inferStatsFileType(fileName: string, fallback?: string): string {
+  const match = fileName.toLowerCase().match(/\.([a-z0-9]{1,6})$/);
+  if (match?.[1]) return match[1];
+  if (fallback && fallback !== 'file') return fallback;
+  return 'file';
+}
+
 async function buildZip(
   resources: MoodleResource[],
-  options: ZipBuildOptions,
+  _options: ZipBuildOptions,
 ): Promise<{ zipBuffer: ArrayBuffer; failedUrls: string[]; successfulCount: number; totalFiles: number }> {
+  void _options;
   const chosen = dedupeResources(resources);
   const zip = new JSZip();
   const existingPaths = new Set<string>();
@@ -364,35 +393,6 @@ async function buildZip(
     successfulCount: total - failedUrls.length,
     totalFiles: total,
   };
-}
-
-function getExtFromUrl(url: string): string | undefined {
-  try {
-    const u = new URL(url);
-    const last = u.pathname.split('/').pop() || '';
-    const dot = last.lastIndexOf('.');
-    if (dot <= 0) return undefined;
-    const ext = last.slice(dot + 1).toLowerCase();
-    return ext || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function ensureNameHasExt(name: string, ext?: string): string {
-  const clean = sanitizeFileName(name);
-  if (!ext) return clean;
-  if (clean.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) return clean;
-  // If name already has some extension, keep it
-  if (/\.[a-z0-9]{1,5}$/i.test(clean)) return clean;
-  return `${clean}.${ext}`;
-}
-
-function inferStatsFileType(fileName: string, fallback?: string): string {
-  const match = fileName.toLowerCase().match(/\.([a-z0-9]{1,6})$/);
-  if (match?.[1]) return match[1];
-  if (fallback && fallback !== 'file') return fallback;
-  return 'file';
 }
 
 ext.runtime.onMessage.addListener(

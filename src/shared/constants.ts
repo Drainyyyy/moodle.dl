@@ -22,11 +22,7 @@ export const COURSE_NAME_SELECTORS: string[] = [
   'h1',
 ];
 
-export const SECTION_SELECTORS: string[] = [
-  '.course-content .section',
-  'li.section',
-  'div.section',
-];
+export const SECTION_SELECTORS: string[] = ['.course-content .section', 'li.section', 'div.section'];
 
 export const SECTION_TITLE_SELECTORS: string[] = [
   '.sectionname',

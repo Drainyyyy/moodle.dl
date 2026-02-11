@@ -19,6 +19,11 @@ const ext = getExtApi();
 
 const IDB_HANDLE_KEY = 'saveDirectory';
 
+type DirectoryHandleWithPermissions = FileSystemDirectoryHandle & {
+  queryPermission?: (options?: any) => Promise<PermissionState>;
+  requestPermission?: (options?: any) => Promise<PermissionState>;
+};
+
 let resources: MoodleResource[] = [];
 let tracking: DownloadTrackingMap = {};
 let onlyNew = false;
@@ -70,11 +75,11 @@ async function getActiveTabId(): Promise<number | undefined> {
 }
 
 async function sendToContent(tabId: number, msg: MessageToContent): Promise<MessageFromContent> {
-  return await extAsync.tabsSendMessage<MessageFromContent>(tabId, msg);
+  return extAsync.tabsSendMessage<MessageFromContent>(tabId, msg);
 }
 
 async function sendToBackground(msg: MessageToBackground): Promise<MessageFromBackground> {
-  return await extAsync.runtimeSendMessage<MessageFromBackground>(msg);
+  return extAsync.runtimeSendMessage<MessageFromBackground>(msg);
 }
 
 function isResourceNew(r: MoodleResource): boolean {
@@ -96,6 +101,25 @@ function formatBytes(bytes?: number): string {
     idx += 1;
   }
   return `${val.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
+}
+
+function onResourceCheckboxChange(ev: Event): void {
+  const cb = ev.target as HTMLInputElement | null;
+  if (!cb) return;
+  const id = cb.getAttribute('data-id') || '';
+  if (!id) return;
+  if (cb.checked) selected.add(id);
+  else selected.delete(id);
+}
+
+function onResourceRowClick(ev: Event): void {
+  const target = ev.target as HTMLElement | null;
+  if (!target) return;
+  if (target.tagName.toLowerCase() === 'input') return;
+  const row = ev.currentTarget as HTMLElement | null;
+  if (!row) return;
+  const cb = row.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
+  cb?.click();
 }
 
 function renderList(): void {
@@ -226,32 +250,42 @@ function renderList(): void {
     `;
 
     const cb = row.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
-    cb?.addEventListener('change', () => {
-      const id = cb.getAttribute('data-id') || '';
-      if (!id) return;
-      if (cb.checked) selected.add(id);
-      else selected.delete(id);
-    });
+    cb?.addEventListener('change', onResourceCheckboxChange);
 
     // Click row toggles checkbox (more intuitive)
-    row.addEventListener('click', (ev) => {
-      const target = ev.target as HTMLElement | null;
-      if (!target) return;
-      if (target.tagName.toLowerCase() === 'input') return;
-      cb?.click();
-    });
+    row.addEventListener('click', onResourceRowClick);
 
     list.appendChild(row);
   }
 }
 
 function setButtonsEnabled(enabled: boolean): void {
-  const ids = ['btnSelectAll', 'btnDeselectAll', 'btnSaveMenu', 'btnDownload', 'btnReset', 'chkOnlyNew', 'selSort'];
+  const ids = [
+    'btnSelectAll',
+    'btnDeselectAll',
+    'btnSaveMenu',
+    'btnDownload',
+    'btnReset',
+    'chkOnlyNew',
+    'selSort',
+  ];
   for (const id of ids) {
     const el = document.getElementById(id) as HTMLButtonElement | HTMLInputElement | null;
     if (!el) continue;
     (el as any).disabled = !enabled;
   }
+}
+
+function updateSaveLabel(): void {
+  const el = document.getElementById('saveLabel');
+  if (!el) return;
+
+  if (saveSettings.mode === 'directory') {
+    el.textContent = i18n('saveModeFolder');
+    return;
+  }
+
+  el.textContent = saveSettings.saveAs ? i18n('saveModeAsk') : i18n('saveModeDownloads');
 }
 
 async function loadTracking(): Promise<void> {
@@ -276,7 +310,7 @@ async function loadSaveSettings(): Promise<void> {
 
   if (saveSettings.mode === 'directory') {
     try {
-      savedDirectoryHandle = await idbGetHandle<FileSystemDirectoryHandle>(IDB_HANDLE_KEY);
+      savedDirectoryHandle = (await idbGetHandle<FileSystemDirectoryHandle>(IDB_HANDLE_KEY)) ?? null;
     } catch {
       savedDirectoryHandle = null;
     }
@@ -289,18 +323,6 @@ async function setSaveSettings(next: SaveSettings): Promise<void> {
   saveSettings = next;
   await storage.set(STORAGE_KEYS.saveSettings, next);
   updateSaveLabel();
-}
-
-function updateSaveLabel(): void {
-  const el = document.getElementById('saveLabel');
-  if (!el) return;
-
-  if (saveSettings.mode === 'directory') {
-    el.textContent = i18n('saveModeFolder');
-    return;
-  }
-
-  el.textContent = saveSettings.saveAs ? i18n('saveModeAsk') : i18n('saveModeDownloads');
 }
 
 function toggleSaveMenu(show?: boolean): void {
@@ -347,9 +369,10 @@ async function saveZip(zipBuffer: ArrayBuffer, zipName: string): Promise<void> {
   // Prefer File System Access if configured.
   if (saveSettings.mode === 'directory' && savedDirectoryHandle) {
     try {
-      const perm = await savedDirectoryHandle.queryPermission?.({ mode: 'readwrite' as any });
+      const handle = savedDirectoryHandle as DirectoryHandleWithPermissions;
+      const perm = await handle.queryPermission?.({ mode: 'readwrite' as any });
       if (perm !== 'granted') {
-        const req = await savedDirectoryHandle.requestPermission?.({ mode: 'readwrite' as any });
+        const req = await handle.requestPermission?.({ mode: 'readwrite' as any });
         if (req !== 'granted') throw new Error(i18n('permissionDenied'));
       }
 
@@ -409,22 +432,29 @@ async function buildZipStream(
       let buffer: Uint8Array | null = null;
       let receivedChunks = 0;
 
+      const handlers = {
+        onMessage: (msg: ZipPortMessageFromBackground) => {
+          void msg;
+        },
+        onDisconnect: () => {},
+      };
+
       const cleanup = () => {
         try {
-          port.onMessage.removeListener(onMessage as any);
-          port.onDisconnect.removeListener(onDisconnect as any);
+          port.onMessage.removeListener(handlers.onMessage as any);
+          port.onDisconnect.removeListener(handlers.onDisconnect as any);
           port.disconnect();
         } catch {
           // ignore
         }
       };
 
-      const onDisconnect = () => {
+      handlers.onDisconnect = () => {
         cleanup();
         reject(new Error(i18n('zipStreamDisconnected')));
       };
 
-      const onMessage = (msg: ZipPortMessageFromBackground) => {
+      handlers.onMessage = (msg: ZipPortMessageFromBackground) => {
         if (msg.type === 'MD_ZIP_STREAM_META') {
           totalBytes = msg.totalBytes;
           chunkSize = msg.chunkSize;
@@ -466,10 +496,14 @@ async function buildZipStream(
         }
       };
 
-      port.onDisconnect.addListener(onDisconnect);
-      port.onMessage.addListener(onMessage as any);
+      port.onDisconnect.addListener(handlers.onDisconnect);
+      port.onMessage.addListener(handlers.onMessage as any);
 
-      const req: ZipPortMessageToBackground = { type: 'MD_ZIP_STREAM_REQUEST', zipName, resources: selectedResources };
+      const req: ZipPortMessageToBackground = {
+        type: 'MD_ZIP_STREAM_REQUEST',
+        zipName,
+        resources: selectedResources,
+      };
       port.postMessage(req);
     });
   } catch {
@@ -484,10 +518,17 @@ async function buildZipStream(
     });
 
     if (resp.type === 'MD_BUILD_ZIP_RESULT' && resp.ok && resp.zipBuffer) {
-      return { zipBuffer: resp.zipBuffer, failedUrls: resp.failedUrls || [], fileCount: selectedResources.length };
+      return {
+        zipBuffer: resp.zipBuffer,
+        failedUrls: resp.failedUrls || [],
+        fileCount: selectedResources.length,
+      };
     }
 
-    throw new Error(resp.type === 'MD_BUILD_ZIP_RESULT' ? resp.error : i18n('zipBuildFailed'));
+    if (resp.type === 'MD_BUILD_ZIP_RESULT' && !resp.ok) {
+      throw new Error(resp.error);
+    }
+    throw new Error(i18n('zipBuildFailed'));
   }
 }
 

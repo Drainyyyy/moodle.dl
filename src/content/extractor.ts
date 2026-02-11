@@ -7,7 +7,13 @@ import {
   SECTION_SELECTORS,
   SECTION_TITLE_SELECTORS,
 } from '../shared/constants';
-import { dedupeResources, getFileExtensionFromUrl, guessFileType, normalizeUrl, sanitizeFileName } from '../shared/utils';
+import {
+  dedupeResources,
+  getFileExtensionFromUrl,
+  guessFileType,
+  normalizeUrl,
+  sanitizeFileName,
+} from '../shared/utils';
 
 export function isMoodlePage(doc: Document): boolean {
   return MOODLE_DETECT_SELECTORS.some((sel) => !!doc.querySelector(sel));
@@ -152,10 +158,12 @@ export function extractResources(doc: Document): MoodleResource[] {
         // Folder contents sometimes rendered inline
         const activity = a.closest('.activity, .activity-item');
         const isFolderActivity = !!activity?.classList.contains('modtype_folder');
-        if (isFolderActivity) {
+        if (isFolderActivity && activity) {
           const folderName = extractLinkName(a);
           const inlineFiles = Array.from(
-            activity.querySelectorAll<HTMLAnchorElement>('a[href*="pluginfile.php"], a[href*="forcedownload=1"]'),
+            activity.querySelectorAll<HTMLAnchorElement>(
+              'a[href*="pluginfile.php"], a[href*="forcedownload=1"]',
+            ),
           );
           if (inlineFiles.length > 0) {
             for (const f of inlineFiles) processAnchor(f, sectionName, folderName);

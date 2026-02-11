@@ -25,9 +25,12 @@ describe('content extractor', () => {
     const dom = new JSDOM(html, { url: 'https://elearning.example.edu/course/view.php?id=1' });
     const res = extractResources(dom.window.document);
     expect(res.length).toBe(1);
-    expect(res[0].name).toBe('Slides');
-    expect(res[0].fileType).toBe('pdf');
-    expect(res[0].path).toContain('Course A');
-    expect(res[0].path).toContain('Week 1');
+    const first = res[0];
+    expect(first).toBeDefined();
+    if (!first) return;
+    expect(first.name).toBe('Slides');
+    expect(first.fileType).toBe('pdf');
+    expect(first.path).toContain('Course A');
+    expect(first.path).toContain('Week 1');
   });
 });

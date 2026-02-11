@@ -12,7 +12,7 @@ async function readJson(filePath: string): Promise<any> {
 function resolveFirefoxManifest(env: Record<string, string>): string {
   // Requested option B: Firefox MV3 Service Worker.
   // For legacy manifest builds (not recommended), set VITE_FIREFOX_SERVICE_WORKER=false.
-  const useSw = (env.VITE_FIREFOX_SERVICE_WORKER || 'true') === 'true';
+  const useSw = (env['VITE_FIREFOX_SERVICE_WORKER'] || 'true') === 'true';
   return useSw ? 'manifests/manifest.firefox.sw.json' : 'manifests/manifest.firefox.json';
 }
 
@@ -39,7 +39,7 @@ function manifestGeneratorPlugin(target: BuildTarget, env: Record<string, string
       const merged: any = {
         ...base,
         ...browserSpecific,
-        version: env.VITE_EXT_VERSION || pkg.version || base.version,
+        version: env['VITE_EXT_VERSION'] || pkg.version || base.version,
       };
 
       // If locales exist, Chrome requires default_locale.
@@ -95,10 +95,10 @@ function copyPopupAndLocalesPlugin(): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  const env = loadEnv(mode, process.cwd(), 'VITE_') as Record<string, string>;
   const target =
-    (process.env.VITE_BUILD_TARGET as BuildTarget) ||
-    (env.VITE_BUILD_TARGET as BuildTarget) ||
+    (process.env['VITE_BUILD_TARGET'] as BuildTarget) ||
+    (env['VITE_BUILD_TARGET'] as BuildTarget) ||
     'chrome';
   const outDir = path.resolve(`dist/${target}`);
 
@@ -108,16 +108,14 @@ export default defineConfig(({ mode }) => {
     popup: path.resolve('src/popup/popup.ts'),
   };
 
-  const single = process.env.VITE_SINGLE_ENTRY;
-  const isSingleEntry = !!(single && entries[single]);
-
-  if (!isSingleEntry) {
+  const single = process.env['VITE_SINGLE_ENTRY'];
+  if (!single || !entries[single]) {
     throw new Error(
       'This project uses single-entry Vite builds to avoid module imports in extension scripts. Use: node scripts/build.mjs',
     );
   }
 
-  const input = { [single as string]: entries[single as string] };
+  const input: Record<string, string> = { [single]: entries[single] };
 
   return {
     publicDir: 'public',
@@ -128,8 +126,8 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir,
-      sourcemap: (env.VITE_ENABLE_SOURCEMAPS || 'false') === 'true',
-      emptyOutDir: process.env.VITE_EMPTY_OUTDIR ? process.env.VITE_EMPTY_OUTDIR === 'true' : true,
+      sourcemap: (env['VITE_ENABLE_SOURCEMAPS'] || 'false') === 'true',
+      emptyOutDir: process.env['VITE_EMPTY_OUTDIR'] ? process.env['VITE_EMPTY_OUTDIR'] === 'true' : true,
       rollupOptions: {
         input,
         output: {
@@ -145,11 +143,11 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.NODE_ENV': JSON.stringify(mode),
       // Build-time injected flags (avoid import.meta at runtime for IIFE bundles)
-      __MD_ENABLE_TELEMETRY__: JSON.stringify((env.VITE_ENABLE_TELEMETRY || 'true') !== 'false'),
-      __MD_STATS_API_URL__: JSON.stringify(env.VITE_STATS_API_URL || ''),
-      __MD_STATS_API_KEY__: JSON.stringify(env.VITE_STATS_API_KEY || ''),
-      __MD_ENABLE_DEBUG_LOGS__: JSON.stringify((env.VITE_ENABLE_DEBUG_LOGS || 'false') === 'true'),
-      __MD_GITHUB_REPO__: JSON.stringify(env.VITE_GITHUB_REPO || ''),
+      __MD_ENABLE_TELEMETRY__: JSON.stringify((env['VITE_ENABLE_TELEMETRY'] || 'true') !== 'false'),
+      __MD_STATS_API_URL__: JSON.stringify(env['VITE_STATS_API_URL'] || ''),
+      __MD_STATS_API_KEY__: JSON.stringify(env['VITE_STATS_API_KEY'] || ''),
+      __MD_ENABLE_DEBUG_LOGS__: JSON.stringify((env['VITE_ENABLE_DEBUG_LOGS'] || 'false') === 'true'),
+      __MD_GITHUB_REPO__: JSON.stringify(env['VITE_GITHUB_REPO'] || ''),
     },
   };
 });

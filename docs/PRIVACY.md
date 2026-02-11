@@ -1,9 +1,11 @@
 # Privacy Policy
 
 ## Data Collection
+
 moodle.download does **NOT** collect any personal data by default.
 
 ### Optional Telemetry (Opt-In)
+
 If you explicitly enable telemetry, we collect:
 
 - Number of downloaded files per session (aggregated)

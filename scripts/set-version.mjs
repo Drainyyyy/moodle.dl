@@ -106,11 +106,11 @@ async function updateEnvFile(version) {
 async function main() {
   const version = parseVersionArg(process.argv.slice(2));
   if (!version) {
-    console.error('Missing version. Usage: node scripts/set-version.mjs 1.2.3');
+    process.stderr.write('Missing version. Usage: node scripts/set-version.mjs 1.2.3\n');
     process.exit(1);
   }
   if (!isSemver(version)) {
-    console.error(`Invalid semver: ${version}`);
+    process.stderr.write(`Invalid semver: ${version}\n`);
     process.exit(1);
   }
 
@@ -132,7 +132,7 @@ async function main() {
   // Changelog presence (create skeleton if missing)
   await ensureChangelogSection(version);
 
-  console.log(`Version set to ${version}`);
+  process.stdout.write(`Version set to ${version}\n`);
 }
 
 await main();
