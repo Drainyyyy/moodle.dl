@@ -122,6 +122,24 @@ function onResourceRowClick(ev: Event): void {
   cb?.click();
 }
 
+function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
+  return data instanceof Uint8Array ? data : new Uint8Array(data);
+}
+
+function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
+  if (data instanceof ArrayBuffer) return data;
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error || new Error('Failed to read blob'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 function renderList(): void {
   const list = document.getElementById('resourceList');
   if (!list) return;
@@ -363,8 +381,9 @@ async function clearPersistedDirectory(): Promise<void> {
   setStatus(i18n('savingToDownloads'));
 }
 
-async function saveZip(zipBuffer: ArrayBuffer, zipName: string): Promise<void> {
+async function saveZip(zipBuffer: ArrayBuffer | Uint8Array, zipName: string): Promise<void> {
   const safeName = sanitizeFileName(zipName.endsWith('.zip') ? zipName : `${zipName}.zip`);
+  const zipData = zipBuffer instanceof Uint8Array ? zipBuffer : new Uint8Array(zipBuffer);
 
   // Prefer File System Access if configured.
   if (saveSettings.mode === 'directory' && savedDirectoryHandle) {
@@ -378,7 +397,7 @@ async function saveZip(zipBuffer: ArrayBuffer, zipName: string): Promise<void> {
 
       const fileHandle = await savedDirectoryHandle.getFileHandle(safeName, { create: true });
       const writable = await fileHandle.createWritable();
-      await writable.write(new Blob([zipBuffer], { type: 'application/zip' }));
+      await writable.write(new Blob([zipData], { type: 'application/zip' }));
       await writable.close();
       return;
     } catch {
@@ -389,14 +408,56 @@ async function saveZip(zipBuffer: ArrayBuffer, zipName: string): Promise<void> {
   }
 
   // Default: downloads folder, optionally saveAs dialog.
-  const blob = new Blob([zipBuffer], { type: 'application/zip' });
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    await extAsync.downloadsDownload({ url: objectUrl, filename: safeName, saveAs: saveSettings.saveAs });
-  } finally {
-    // Delay revoke a bit so the browser has time to read it
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+  // For reliability, prefer data URLs for moderate sizes to avoid blob URL invalidation
+  // when the popup closes.
+  const blob = new Blob([zipData], { type: 'application/zip' });
+  const DATA_URL_MAX_BYTES = 25 * 1024 * 1024;
+  if (zipData.byteLength <= DATA_URL_MAX_BYTES) {
+    const dataUrl = await blobToDataUrl(blob);
+    await extAsync.downloadsDownload({
+      url: dataUrl,
+      filename: safeName,
+      saveAs: saveSettings.saveAs,
+    });
+    return;
   }
+
+  // Fallback for larger files: use blob URL and revoke after completion.
+  const objectUrl = URL.createObjectURL(blob);
+  let downloadId: number;
+  try {
+    downloadId = await extAsync.downloadsDownload({
+      url: objectUrl,
+      filename: safeName,
+      saveAs: saveSettings.saveAs,
+    });
+  } catch (err) {
+    URL.revokeObjectURL(objectUrl);
+    throw err;
+  }
+
+  const revoke = () => {
+    try {
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // ignore
+    }
+  };
+
+  const onChanged = (delta: chrome.downloads.DownloadDelta) => {
+    if (delta.id !== downloadId) return;
+    if (delta.state?.current === 'complete' || delta.error) {
+      ext.downloads.onChanged.removeListener(onChanged);
+      revoke();
+    }
+  };
+
+  ext.downloads.onChanged.addListener(onChanged);
+  // Safety: revoke eventually even if we miss events.
+  setTimeout(() => {
+    ext.downloads.onChanged.removeListener(onChanged);
+    revoke();
+  }, 5 * 60_000);
 }
 
 function computeDefaultZipName(): string {
@@ -468,7 +529,7 @@ async function buildZipStream(
         if (msg.type === 'MD_ZIP_STREAM_CHUNK') {
           if (!buffer) return;
           const offset = msg.index * chunkSize;
-          buffer.set(new Uint8Array(msg.data), offset);
+          buffer.set(toUint8Array(msg.data), offset);
           receivedChunks += 1;
           // small UI hint (not the main progress)
           if (totalChunks > 0) {
@@ -484,7 +545,7 @@ async function buildZipStream(
             reject(new Error(i18n('zipStreamMissingBuffer')));
             return;
           }
-          const zipBuffer = buffer.buffer;
+          const zipBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
           cleanup();
           resolve({ zipBuffer, failedUrls, fileCount });
           return;
@@ -518,8 +579,9 @@ async function buildZipStream(
     });
 
     if (resp.type === 'MD_BUILD_ZIP_RESULT' && resp.ok && resp.zipBuffer) {
+      const zipBuffer = toArrayBuffer(resp.zipBuffer);
       return {
-        zipBuffer: resp.zipBuffer,
+        zipBuffer,
         failedUrls: resp.failedUrls || [],
         fileCount: selectedResources.length,
       };
@@ -541,10 +603,28 @@ async function startDownload(selectedResources: MoodleResource[]): Promise<void>
   setStatus(i18n('downloadStarted'));
 
   try {
-    const { zipBuffer, failedUrls, fileCount } = await buildZipStream(selectedResources, zipName);
-    if (failedUrls.length) lastFailedUrls = failedUrls;
+    if (saveSettings.mode === 'downloads') {
+      const resp = await sendToBackground({
+        type: 'MD_BUILD_ZIP',
+        resources: selectedResources,
+        options: {
+          zipName,
+          returnBuffer: false,
+          saveAs: saveSettings.saveAs,
+        },
+      });
 
-    await saveZip(zipBuffer, zipName);
+      if (resp.type === 'MD_BUILD_ZIP_RESULT' && resp.ok) {
+        if (resp.failedUrls?.length) lastFailedUrls = resp.failedUrls;
+      } else {
+        throw new Error(resp.type === 'MD_BUILD_ZIP_RESULT' ? resp.error : i18n('zipBuildFailed'));
+      }
+    } else {
+      const { zipBuffer, failedUrls, fileCount } = await buildZipStream(selectedResources, zipName);
+      if (failedUrls.length) lastFailedUrls = failedUrls;
+
+      await saveZip(zipBuffer, zipName);
+    }
 
     // Refresh tracking after build/save
     await loadTracking();
@@ -554,7 +634,8 @@ async function startDownload(selectedResources: MoodleResource[]): Promise<void>
     }
     renderList();
 
-    const okCount = Math.max(0, fileCount - lastFailedUrls.length);
+    const totalCount = selectedResources.length;
+    const okCount = Math.max(0, totalCount - lastFailedUrls.length);
     setStatus(i18n('downloadComplete', [String(okCount)]));
     setProgress(100);
 

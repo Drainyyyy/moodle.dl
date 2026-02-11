@@ -63,6 +63,8 @@ export type MessageToBackground =
         zipName?: string;
         /** Falls true: ZIP als ArrayBuffer zurückgeben (Popup schreibt Datei selbst) */
         returnBuffer?: boolean;
+        /** Bei downloads-mode: saveAs zeigt Dialog */
+        saveAs?: boolean;
       };
     };
 
@@ -77,7 +79,7 @@ export type MessageFromBackground =
       type: 'MD_BUILD_ZIP_RESULT';
       ok: true;
       downloadId?: number;
-      zipBuffer?: ArrayBuffer;
+      zipBuffer?: ArrayBuffer | Uint8Array;
       failedUrls?: string[];
     }
   | { type: 'MD_BUILD_ZIP_RESULT'; ok: false; error: string; failedUrls?: string[] }
@@ -110,6 +112,6 @@ export type ZipPortMessageFromBackground =
       totalFiles: number;
       failedUrls: string[];
     }
-  | { type: 'MD_ZIP_STREAM_CHUNK'; index: number; data: ArrayBuffer }
+  | { type: 'MD_ZIP_STREAM_CHUNK'; index: number; data: ArrayBuffer | Uint8Array }
   | { type: 'MD_ZIP_STREAM_DONE' }
   | { type: 'MD_ZIP_STREAM_ERROR'; error: string };

@@ -262,6 +262,74 @@ function inferStatsFileType(fileName: string, fallback?: string): string {
   return 'file';
 }
 
+function uint8ToBase64(bytes: Uint8Array): string {
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+async function downloadZip(zipBuffer: ArrayBuffer, zipName: string, saveAs?: boolean): Promise<number> {
+  const zipBytes = new Uint8Array(zipBuffer);
+  const DATA_URL_MAX_BYTES = 25 * 1024 * 1024;
+
+  if (zipBytes.byteLength <= DATA_URL_MAX_BYTES) {
+    const base64 = uint8ToBase64(zipBytes);
+    const dataUrl = `data:application/zip;base64,${base64}`;
+    return new Promise((resolve, reject) => {
+      ext.downloads.download(
+        { url: dataUrl, filename: zipName, saveAs: !!saveAs },
+        (downloadId) => {
+          const err = ext.runtime?.lastError;
+          if (err) reject(new Error(err.message));
+          else resolve(downloadId);
+        },
+      );
+    });
+  }
+
+  const blob = new Blob([zipBytes], { type: 'application/zip' });
+  const objectUrl = URL.createObjectURL(blob);
+
+  const downloadId = await new Promise<number>((resolve, reject) => {
+    ext.downloads.download(
+      { url: objectUrl, filename: zipName, saveAs: !!saveAs },
+      (id) => {
+        const err = ext.runtime?.lastError;
+        if (err) reject(new Error(err.message));
+        else resolve(id);
+      },
+    );
+  });
+
+  const revoke = () => {
+    try {
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // ignore
+    }
+  };
+
+  const onChanged = (delta: chrome.downloads.DownloadDelta) => {
+    if (delta.id !== downloadId) return;
+    if (delta.state?.current === 'complete' || delta.error) {
+      ext.downloads.onChanged.removeListener(onChanged);
+      revoke();
+    }
+  };
+
+  ext.downloads.onChanged.addListener(onChanged);
+  setTimeout(() => {
+    ext.downloads.onChanged.removeListener(onChanged);
+    revoke();
+  }, 5 * 60_000);
+
+  return downloadId;
+}
+
 async function buildZip(
   resources: MoodleResource[],
   _options: ZipBuildOptions,
@@ -361,9 +429,9 @@ async function buildZip(
   sendToPopup({ type: 'MD_PROGRESS', phase: 'zip', current: 0, total: 100 });
 
   // Generate ZIP (always ArrayBuffer; download is handled by the popup)
-  const zipOut = await zip.generateAsync(
+  const zipBytes = await zip.generateAsync(
     {
-      type: 'arraybuffer',
+      type: 'uint8array',
       compression: 'DEFLATE',
       compressionOptions: { level: 6 },
     },
@@ -372,6 +440,8 @@ async function buildZip(
       sendToPopup({ type: 'MD_PROGRESS', phase: 'zip', current: percent, total: 100 });
     },
   );
+
+  const zipOut = zipBytes.buffer.slice(zipBytes.byteOffset, zipBytes.byteOffset + zipBytes.byteLength);
 
   // Persist tracking
   await setTracking(tracking);
@@ -435,7 +505,15 @@ ext.runtime.onMessage.addListener(
             failedCount: failedUrls.length,
           });
 
-          sendResponse({ type: 'MD_BUILD_ZIP_RESULT', ok: true, zipBuffer, failedUrls });
+          if (options?.returnBuffer) {
+            sendResponse({ type: 'MD_BUILD_ZIP_RESULT', ok: true, zipBuffer, failedUrls });
+            return;
+          }
+
+          const rawName = typeof options?.zipName === 'string' ? options.zipName : DEFAULT_ZIP_NAME;
+          const safeName = sanitizeFileName(rawName.endsWith('.zip') ? rawName : `${rawName}.zip`);
+          const downloadId = await downloadZip(zipBuffer, safeName, options?.saveAs);
+          sendResponse({ type: 'MD_BUILD_ZIP_RESULT', ok: true, downloadId, failedUrls });
           return;
         }
 
@@ -491,7 +569,8 @@ ext.runtime.onConnect.addListener((port) => {
           returnBuffer: true,
         });
 
-        const totalBytes = zipBuffer.byteLength;
+        const zipBytes = new Uint8Array(zipBuffer);
+        const totalBytes = zipBytes.byteLength;
         const totalChunks = Math.ceil(totalBytes / ZIP_CHUNK_SIZE);
 
         port.postMessage({
@@ -509,7 +588,7 @@ ext.runtime.onConnect.addListener((port) => {
         for (let i = 0; i < totalChunks; i += 1) {
           const start = i * ZIP_CHUNK_SIZE;
           const end = Math.min(totalBytes, start + ZIP_CHUNK_SIZE);
-          const chunk = zipBuffer.slice(start, end);
+          const chunk = zipBytes.slice(start, end);
           port.postMessage({ type: 'MD_ZIP_STREAM_CHUNK', index: i, data: chunk });
         }
 
