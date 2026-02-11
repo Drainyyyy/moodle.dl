@@ -28,13 +28,12 @@ import {
   withConcurrency,
 } from '../shared/utils';
 import { storage } from '../shared/storage';
-import { extAsync } from '../shared/ext';
 
 type DownloadErrorType = string;
 
 interface ZipBuildOptions {
   zipName?: string;
-  saveAs: boolean;
+  /** Falls true, ZIP als ArrayBuffer zurückgeben (kleine ZIPs); für große ZIPs Port-Stream nutzen */
   returnBuffer?: boolean;
 }
 
@@ -204,22 +203,6 @@ async function postTelemetryIfEnabled(stats: DownloadStats, optIn: boolean): Pro
   }
 }
 
-async function waitForDownloadComplete(downloadId: number): Promise<void> {
-  await new Promise<void>((resolve) => {
-    const handler = (delta: chrome.downloads.DownloadDelta): void => {
-      if (delta.id !== downloadId) return;
-      if (delta.state?.current === 'complete') {
-        ext.downloads.onChanged.removeListener(handler);
-        resolve();
-      }
-      if (delta.error?.current) {
-        ext.downloads.onChanged.removeListener(handler);
-        resolve();
-      }
-    };
-    ext.downloads.onChanged.addListener(handler);
-  });
-}
 
 async function getTracking(): Promise<DownloadTrackingMap> {
   const map: DownloadTrackingMap = (await storage.get(STORAGE_KEYS.downloadTracking)) || {};
@@ -251,7 +234,10 @@ async function setTelemetryPref(optIn: boolean): Promise<void> {
   await storage.set(STORAGE_KEYS.telemetryOptIn, optIn);
 }
 
-async function buildZip(resources: MoodleResource[], options: ZipBuildOptions): Promise<{ zipBuffer?: ArrayBuffer; downloadId?: number; failedUrls: string[]; successfulCount: number; totalFiles: number }>{
+async function buildZip(
+  resources: MoodleResource[],
+  options: ZipBuildOptions,
+): Promise<{ zipBuffer: ArrayBuffer; failedUrls: string[]; successfulCount: number; totalFiles: number }> {
   const chosen = dedupeResources(resources);
   const zip = new JSZip();
   const existingPaths = new Set<string>();
@@ -345,12 +331,10 @@ async function buildZip(resources: MoodleResource[], options: ZipBuildOptions): 
 
   sendToPopup({ type: 'MD_PROGRESS', phase: 'zip', current: 0, total: 100 });
 
-  // Generate ZIP
-  const zipType = options.returnBuffer ? ('arraybuffer' as const) : ('blob' as const);
-
+  // Generate ZIP (always ArrayBuffer; download is handled by the popup)
   const zipOut = await zip.generateAsync(
     {
-      type: zipType,
+      type: 'arraybuffer',
       compression: 'DEFLATE',
       compressionOptions: { level: 6 },
     },
@@ -374,45 +358,12 @@ async function buildZip(resources: MoodleResource[], options: ZipBuildOptions): 
   };
   await postTelemetryIfEnabled(stats, optIn);
 
-  if (options.returnBuffer) {
-    return { zipBuffer: zipOut as ArrayBuffer, failedUrls, successfulCount: total - failedUrls.length, totalFiles: total };
-  }
-
-  // Trigger browser download
-  const zipName = sanitizeFileName(options.zipName || DEFAULT_ZIP_NAME);
-  const blob = zipOut as Blob;
-  const objectUrl = URL.createObjectURL(blob);
-
-  let downloadId: number;
-  try {
-    downloadId = await extAsync.downloadsDownload({
-      url: objectUrl,
-      filename: zipName,
-      saveAs: options.saveAs,
-      conflictAction: 'uniquify',
-    });
-  } finally {
-    // Revoke later (after download starts)
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
-  }
-
-  sendToPopup({ type: 'MD_PROGRESS', phase: 'download', current: 1, total: 1 });
-  await waitForDownloadComplete(downloadId);
-
-  try {
-    ext.notifications.create({
-      type: 'basic',
-      iconUrl: 'icons/icon128.png',
-      title: 'moodle.download',
-      message: `Download abgeschlossen: ${stats.fileCount} Dateien`,
-    }, () => {
-      // no-op
-    });
-  } catch {
-    // notifications can fail if permission not granted
-  }
-
-  return { downloadId, failedUrls, successfulCount: total - failedUrls.length, totalFiles: total };
+  return {
+    zipBuffer: zipOut as ArrayBuffer,
+    failedUrls,
+    successfulCount: total - failedUrls.length,
+    totalFiles: total,
+  };
 }
 
 function getExtFromUrl(url: string): string | undefined {
@@ -475,7 +426,7 @@ ext.runtime.onMessage.addListener(
 
         if (message?.type === 'MD_BUILD_ZIP') {
           const { resources, options } = message;
-          const { zipBuffer, downloadId, failedUrls, successfulCount } = await buildZip(resources, options);
+          const { zipBuffer, failedUrls, successfulCount } = await buildZip(resources, options);
 
           sendToPopup({
             type: 'MD_COMPLETE',
@@ -484,7 +435,27 @@ ext.runtime.onMessage.addListener(
             failedCount: failedUrls.length,
           });
 
-          sendResponse({ type: 'MD_BUILD_ZIP_RESULT', ok: true, zipBuffer, downloadId, failedUrls });
+          sendResponse({ type: 'MD_BUILD_ZIP_RESULT', ok: true, zipBuffer, failedUrls });
+          return;
+        }
+
+        if (message?.type === 'MD_NOTIFY_SAVE_DONE') {
+          try {
+            ext.notifications.create(
+              {
+                type: 'basic',
+                iconUrl: 'icons/icon128.png',
+                title: 'moodle.download',
+                message: `Download abgeschlossen: ${message.fileCount} Dateien`,
+              },
+              () => {
+                // no-op
+              },
+            );
+          } catch {
+            // ignore
+          }
+          sendResponse({ type: 'MD_NOTIFY_SAVE_DONE_RESULT', ok: true });
           return;
         }
 
@@ -500,3 +471,57 @@ ext.runtime.onMessage.addListener(
     return true;
   },
 );
+
+// Large ZIPs cannot be returned via runtime.sendMessage reliably.
+// We stream ZIP ArrayBuffers in chunks via a long-lived Port.
+const ZIP_CHUNK_SIZE = 1024 * 1024; // 1 MiB
+
+ext.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'md-zip') return;
+
+  port.onMessage.addListener((msg: any) => {
+    (async () => {
+      try {
+        if (msg?.type !== 'MD_ZIP_STREAM_REQUEST') return;
+        const zipName = typeof msg.zipName === 'string' ? msg.zipName : DEFAULT_ZIP_NAME;
+        const resources = (msg.resources || []) as MoodleResource[];
+
+        const { zipBuffer, failedUrls, successfulCount, totalFiles } = await buildZip(resources, {
+          zipName,
+          returnBuffer: true,
+        });
+
+        const totalBytes = zipBuffer.byteLength;
+        const totalChunks = Math.ceil(totalBytes / ZIP_CHUNK_SIZE);
+
+        port.postMessage({
+          type: 'MD_ZIP_STREAM_META',
+          zipName,
+          totalBytes,
+          chunkSize: ZIP_CHUNK_SIZE,
+          totalChunks,
+          fileCount: successfulCount,
+          failedCount: failedUrls.length,
+          totalFiles,
+          failedUrls,
+        });
+
+        for (let i = 0; i < totalChunks; i += 1) {
+          const start = i * ZIP_CHUNK_SIZE;
+          const end = Math.min(totalBytes, start + ZIP_CHUNK_SIZE);
+          const chunk = zipBuffer.slice(start, end);
+          port.postMessage({ type: 'MD_ZIP_STREAM_CHUNK', index: i, data: chunk });
+        }
+
+        port.postMessage({ type: 'MD_ZIP_STREAM_DONE' });
+      } catch (err: any) {
+        const error = typeof err?.message === 'string' ? err.message : 'Unknown error';
+        try {
+          port.postMessage({ type: 'MD_ZIP_STREAM_ERROR', error });
+        } catch {
+          // ignore
+        }
+      }
+    })();
+  });
+});

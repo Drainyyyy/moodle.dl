@@ -17,6 +17,16 @@
           </div>
         </div>
         <div class="actions">
+          <a
+            id="repoLink"
+            class="repo-link"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub"
+            title="GitHub"
+            >GitHub</a
+          >
           <button id="btnReset" class="btn btn-ghost" type="button" data-i18n="resetTracking"></button>
         </div>
       </header>
@@ -29,21 +39,46 @@
         </div>
       </section>
 
-      <section class="controls">
-        <label class="toggle">
-          <input id="chkOnlyNew" type="checkbox" />
-          <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
-          <span class="toggle-label" data-i18n="onlyNewFiles"></span>
-        </label>
+      <section class="toolbar">
+        <div class="toolbar-row">
+          <label class="toggle">
+            <input id="chkOnlyNew" type="checkbox" />
+            <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+            <span class="toggle-label" data-i18n="onlyNewFiles"></span>
+          </label>
 
-        <div class="control-row">
-          <button id="btnSelectAll" class="btn btn-ghost" type="button" data-i18n="selectAll"></button>
-          <button id="btnDeselectAll" class="btn btn-ghost" type="button" data-i18n="deselectAll"></button>
+          <div class="spacer"></div>
+
+          <label class="select">
+            <span class="select-label" data-i18n="sortBy"></span>
+            <select id="selSort" class="select-input">
+              <option value="path" data-i18n="sortPath"></option>
+              <option value="type" data-i18n="sortType"></option>
+              <option value="name" data-i18n="sortName"></option>
+              <option value="new" data-i18n="sortNew"></option>
+            </select>
+          </label>
         </div>
 
-        <div class="control-row">
-          <button id="btnChooseFolder" class="btn btn-ghost" type="button" data-i18n="chooseFolder"></button>
-          <button id="btnDownload" class="btn" type="button" data-i18n="downloadAsZip"></button>
+        <div class="toolbar-row">
+          <button id="btnSelectAll" class="btn btn-ghost" type="button" data-i18n="selectAll"></button>
+          <button id="btnDeselectAll" class="btn btn-ghost" type="button" data-i18n="deselectAll"></button>
+
+          <div class="spacer"></div>
+
+          <div class="save">
+            <button id="btnSaveMenu" class="btn btn-ghost" type="button">
+              <span id="saveLabel" class="save-label">Downloads</span>
+            </button>
+            <div id="saveMenu" class="menu hidden" role="menu">
+              <button id="saveToDownloads" class="menu-item" type="button" data-i18n="saveToDownloads"></button>
+              <button id="saveAskEveryTime" class="menu-item" type="button" data-i18n="saveAskEveryTime"></button>
+              <button id="savePickFolder" class="menu-item" type="button" data-i18n="savePickFolder"></button>
+              <button id="saveClearFolder" class="menu-item danger" type="button" data-i18n="saveClearFolder"></button>
+            </div>
+          </div>
+
+          <button id="btnDownload" class="btn btn-primary" type="button" data-i18n="downloadAsZip"></button>
         </div>
       </section>
 

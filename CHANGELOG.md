@@ -6,38 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-
-
-
-## [1.0.12] - 2026-02-09
-### Added
-- TODO
+- Firefox MV2 compat build target (`firefox-compat`)
 
 ### Changed
-- None
+- Popup UI: dark theme, flat styling, hard corners, and per-file type labels
+- Popup UI: GitHub repository link in header
+- Popup list: file-type badge class sanitization (e.g. `7z`), keeping type sorting stable
 
-### Fixed
-- None
 
-### Removed
-- None
-
-## [1.0.11] - 2026-02-09
+## [1.0.13] - 2026-02-11
 ### Added
 - TODO
-
-### Changed
-- None
-
-### Fixed
-- None
-
-### Removed
-- None
-
-## [1.0.1] - 2026-02-09
-### Added
-- Fix Chrome Plugin import
 
 ### Changed
 - None
@@ -57,7 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optional anonymous telemetry (GDPR-compliant)
 - Chrome and Firefox support
 - German and English localization
-- Firefox MV2 compat build target (`firefox-compat`)
 
 ### Changed
 - None

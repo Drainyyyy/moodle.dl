@@ -1,39 +1,164 @@
 {
-  "extName": { "message": "moodle.download" },
-  "extDescription": { "message": "Mass download Moodle course materials" },
-  "popupTitle": { "message": "Moodle Downloader" },
-  "selectAll": { "message": "Select All" },
-  "deselectAll": { "message": "Deselect All" },
-  "downloadAsZip": { "message": "Download as ZIP" },
-  "chooseFolder": { "message": "Choose Save Location" },
-  "downloadStarted": { "message": "Download started..." },
+  "extName": {
+    "message": "moodle.download"
+  },
+  "extDescription": {
+    "message": "Mass download Moodle course materials"
+  },
+  "popupTitle": {
+    "message": "Moodle Downloader"
+  },
+  "selectAll": {
+    "message": "Select All"
+  },
+  "deselectAll": {
+    "message": "Deselect All"
+  },
+  "downloadAsZip": {
+    "message": "Download as ZIP"
+  },
+  "chooseFolder": {
+    "message": "Choose Save Location"
+  },
+  "downloadStarted": {
+    "message": "Download started..."
+  },
   "downloadComplete": {
     "message": "Download completed: $COUNT$ files",
-    "placeholders": { "count": { "content": "$1" } }
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
   },
-  "telemetryOptIn": { "message": "Share anonymous usage statistics to improve moodle.download?" },
-  "onlyNewFiles": { "message": "Show only new files (not yet downloaded)" },
-  "resetTracking": { "message": "Reset download history" },
-
-  "yes": { "message": "Yes" },
-  "no": { "message": "No" },
-  "retry": { "message": "Retry" },
-  "loading": { "message": "Loading..." },
-  "ready": { "message": "Ready: $COUNT$ items", "placeholders": { "count": { "content": "$1" } } },
-  "noMoodleDetected": { "message": "This page doesn't look like Moodle (still trying to extract files)." },
-  "noResourcesFound": { "message": "No downloadable resources found on this page." },
-  "nothingSelected": { "message": "Nothing selected." },
-  "savingToDownloads": { "message": "Using browser download dialog." },
-  "saveLocationSet": { "message": "Save location set." },
-  "zipping": { "message": "Creating ZIP..." },
-  "saving": { "message": "Saving..." },
-  "error": { "message": "Error." },
-  "new": { "message": "new" },
-  "downloaded": { "message": "done" },
+  "telemetryOptIn": {
+    "message": "Share anonymous usage statistics to improve moodle.download?"
+  },
+  "onlyNewFiles": {
+    "message": "Show only new files (not yet downloaded)"
+  },
+  "resetTracking": {
+    "message": "Reset download history"
+  },
+  "yes": {
+    "message": "Yes"
+  },
+  "no": {
+    "message": "No"
+  },
+  "retry": {
+    "message": "Retry"
+  },
+  "loading": {
+    "message": "Loading..."
+  },
+  "ready": {
+    "message": "Ready: $COUNT$ items",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "noMoodleDetected": {
+    "message": "This page doesn't look like Moodle (still trying to extract files)."
+  },
+  "noResourcesFound": {
+    "message": "No downloadable resources found on this page."
+  },
+  "nothingSelected": {
+    "message": "Nothing selected."
+  },
+  "savingToDownloads": {
+    "message": "Saving to Downloads folder."
+  },
+  "saveLocationSet": {
+    "message": "Save location set."
+  },
+  "zipping": {
+    "message": "Creating ZIP..."
+  },
+  "saving": {
+    "message": "Saving..."
+  },
+  "error": {
+    "message": "Error."
+  },
+  "new": {
+    "message": "new"
+  },
+  "downloaded": {
+    "message": "done"
+  },
   "someFilesFailed": {
     "message": "Some files failed ($COUNT$). You can retry.",
-    "placeholders": { "count": { "content": "$1" } }
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
   },
-  "trackingResetDone": { "message": "Download history reset." },
-  "noActiveTab": { "message": "No active tab." }
+  "trackingResetDone": {
+    "message": "Download history reset."
+  },
+  "noActiveTab": {
+    "message": "No active tab."
+  },
+  "sortBy": {
+    "message": "Sort"
+  },
+  "sortPath": {
+    "message": "Folder"
+  },
+  "sortType": {
+    "message": "File type"
+  },
+  "sortName": {
+    "message": "Name"
+  },
+  "sortNew": {
+    "message": "New first"
+  },
+  "saveToDownloads": {
+    "message": "Save to Downloads"
+  },
+  "saveAskEveryTime": {
+    "message": "Ask every time (Save As…)"
+  },
+  "savePickFolder": {
+    "message": "Choose folder (remember)"
+  },
+  "saveClearFolder": {
+    "message": "Forget saved folder"
+  },
+  "saveModeDownloads": {
+    "message": "Downloads"
+  },
+  "saveModeAsk": {
+    "message": "Save As…"
+  },
+  "saveModeFolder": {
+    "message": "Folder"
+  },
+  "fsNotSupported": {
+    "message": "Folder picker is not supported in this browser."
+  },
+  "permissionDenied": {
+    "message": "Permission denied."
+  },
+  "zipStreamDisconnected": {
+    "message": "ZIP stream disconnected."
+  },
+  "zipStreamMissingBuffer": {
+    "message": "ZIP buffer missing."
+  },
+  "zipBuildFailed": {
+    "message": "ZIP build failed."
+  },
+  "noFolder": {
+    "message": "No folder"
+  },
+  "folderWillBeExpanded": {
+    "message": "Folder contents will be added"
+  }
 }

@@ -20,7 +20,7 @@ jobs:
             npm run build:${{ matrix.browser }}
           fi
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: moodle-download-${{ matrix.browser }}
           path: dist/${{ matrix.browser }}/

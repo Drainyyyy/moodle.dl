@@ -2,6 +2,7 @@ import type { MoodleResource } from '../shared/types';
 import {
   ACTIVITY_LINK_SELECTORS,
   COURSE_NAME_SELECTORS,
+  DOWNLOADABLE_EXTENSIONS,
   MOODLE_DETECT_SELECTORS,
   SECTION_SELECTORS,
   SECTION_TITLE_SELECTORS,
@@ -34,10 +35,31 @@ function looksDownloadable(href: string): boolean {
   const lower = href.toLowerCase();
   if (lower.includes('pluginfile.php')) return true;
   if (lower.includes('mod/resource/view.php')) return true;
+  if (lower.includes('mod/folder/view.php')) return true;
   if (lower.includes('forcedownload=1')) return true;
 
   const ext = getFileExtensionFromUrl(lower);
-  if (ext && ext.length <= 6) return true;
+  // Important: Moodle uses many *.php view links (forum, quiz, etc.).
+  // We only treat real file extensions as downloadable.
+  if (ext && DOWNLOADABLE_EXTENSIONS.has(ext)) return true;
+
+  return false;
+}
+
+function isForbiddenActivity(a: HTMLAnchorElement): boolean {
+  const href = (a.getAttribute('href') || '').toLowerCase();
+  const activity = a.closest('.activity, .activity-item');
+
+  // Moodle forums are not downloadable resources.
+  if (href.includes('/mod/forum/')) return true;
+  if (activity?.classList.contains('modtype_forum')) return true;
+  if (activity?.getAttribute('data-modname')?.toLowerCase() === 'forum') return true;
+
+  // URL/Page modules usually point to HTML/external resources and cause errors when treated as files.
+  if (href.includes('/mod/url/')) return true;
+  if (activity?.classList.contains('modtype_url')) return true;
+  if (href.includes('/mod/page/')) return true;
+  if (activity?.classList.contains('modtype_page')) return true;
 
   return false;
 }
@@ -83,13 +105,15 @@ export function extractResources(doc: Document): MoodleResource[] {
     if (visitedAnchors.has(a)) return;
     visitedAnchors.add(a);
 
+    if (isForbiddenActivity(a)) return;
+
     const href = a.getAttribute('href') || '';
     if (!href) return;
 
     const absUrl = normalizeUrl(href, doc.baseURI);
     if (!absUrl || absUrl.startsWith('javascript:')) return;
 
-    if (!looksDownloadable(absUrl) && !/mod\/(resource|folder|url|page)\//i.test(absUrl)) return;
+    if (!looksDownloadable(absUrl) && !/mod\/(resource|folder)\//i.test(absUrl)) return;
 
     const name = extractLinkName(a);
     const type = inferResourceType(a);

@@ -1,4 +1,4 @@
-import type { DownloadTrackingMap } from './types';
+import type { DownloadTrackingMap, SaveSettings } from './types';
 import { STORAGE_KEYS } from './constants';
 import { extAsync } from './ext';
 
@@ -8,6 +8,7 @@ export interface StorageSchema {
   [STORAGE_KEYS.downloadTracking]: DownloadTrackingMap;
   [STORAGE_KEYS.telemetryAsked]: boolean;
   [STORAGE_KEYS.telemetryOptIn]: boolean;
+  [STORAGE_KEYS.saveSettings]: SaveSettings;
 }
 
 /**

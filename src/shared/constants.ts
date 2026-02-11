@@ -2,6 +2,7 @@ export const STORAGE_KEYS = {
   downloadTracking: 'downloadTracking',
   telemetryAsked: 'telemetryAsked',
   telemetryOptIn: 'telemetryOptIn',
+  saveSettings: 'saveSettings',
 } as const;
 
 export const MOODLE_DETECT_SELECTORS: string[] = [
@@ -87,7 +88,25 @@ export const KNOWN_MOODLE_PATH_HINTS = [
 
 export const DEFAULT_ZIP_NAME = 'moodle-download.zip';
 
-export const ENABLE_TELEMETRY = (import.meta as any).env?.VITE_ENABLE_TELEMETRY !== 'false';
-export const STATS_API_URL = (import.meta as any).env?.VITE_STATS_API_URL || '';
-export const STATS_API_KEY = (import.meta as any).env?.VITE_STATS_API_KEY || '';
-export const ENABLE_DEBUG_LOGS = (import.meta as any).env?.VITE_ENABLE_DEBUG_LOGS === 'true';
+/**
+ * Build-time injected flags.
+ *
+ * We intentionally do NOT rely on `import.meta.env` at runtime because extension
+ * scripts are bundled as classic IIFEs (non-module) for maximum MV3/MV2
+ * compatibility.
+ */
+export const ENABLE_TELEMETRY = __MD_ENABLE_TELEMETRY__;
+export const STATS_API_URL = __MD_STATS_API_URL__;
+export const STATS_API_KEY = __MD_STATS_API_KEY__;
+export const ENABLE_DEBUG_LOGS = __MD_ENABLE_DEBUG_LOGS__;
+
+/**
+ * GitHub repository in the form "owner/repo".
+ * Used for UI links and optional update checks.
+ */
+export const GITHUB_REPO = __MD_GITHUB_REPO__;
+
+/**
+ * Full https URL to the repository.
+ */
+export const GITHUB_REPO_URL = GITHUB_REPO ? `https://github.com/${GITHUB_REPO}` : '';

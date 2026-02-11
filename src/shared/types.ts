@@ -32,6 +32,16 @@ export interface StoredDownload {
   fileName: string;
 }
 
+export interface SaveSettings {
+  /**
+   * downloads: via chrome.downloads (standardmäßig in Downloads)
+   * directory: File System Access DirectoryHandle (nur wenn verfügbar)
+   */
+  mode: 'downloads' | 'directory';
+  /** Bei downloads-mode: saveAs zeigt Dialog */
+  saveAs: boolean;
+}
+
 export type DownloadTrackingMap = Record<string, StoredDownload>;
 
 export type MessageToContent =
@@ -47,12 +57,12 @@ export type MessageToBackground =
   | { type: 'MD_RESET_TRACKING' }
   | { type: 'MD_GET_TELEMETRY_PREF' }
   | { type: 'MD_SET_TELEMETRY_PREF'; optIn: boolean }
+  | { type: 'MD_NOTIFY_SAVE_DONE'; fileCount: number }
   | {
       type: 'MD_BUILD_ZIP';
       resources: MoodleResource[];
       options: {
         zipName?: string;
-        saveAs: boolean;
         /** Falls true: ZIP als ArrayBuffer zurückgeben (Popup schreibt Datei selbst) */
         returnBuffer?: boolean;
       };
@@ -64,6 +74,7 @@ export type MessageFromBackground =
   | { type: 'MD_TRACKING_RESULT'; tracking: DownloadTrackingMap }
   | { type: 'MD_RESET_TRACKING_RESULT'; ok: true }
   | { type: 'MD_TELEMETRY_PREF_RESULT'; asked: boolean; optIn: boolean }
+  | { type: 'MD_NOTIFY_SAVE_DONE_RESULT'; ok: true }
   | { type: 'MD_BUILD_ZIP_RESULT'; ok: true; downloadId?: number; zipBuffer?: ArrayBuffer; failedUrls?: string[] }
   | { type: 'MD_BUILD_ZIP_RESULT'; ok: false; error: string; failedUrls?: string[] }
   | {
@@ -75,3 +86,26 @@ export type MessageFromBackground =
     }
   | { type: 'MD_COMPLETE'; ok: true; fileCount: number; failedCount: number }
   | { type: 'MD_COMPLETE'; ok: false; error: string };
+
+/** Port-basiertes ZIP-Streaming (für große ZIPs) */
+export type ZipPortMessageToBackground = {
+  type: 'MD_ZIP_STREAM_REQUEST';
+  zipName: string;
+  resources: MoodleResource[];
+};
+
+export type ZipPortMessageFromBackground =
+  | {
+      type: 'MD_ZIP_STREAM_META';
+      zipName: string;
+      totalBytes: number;
+      chunkSize: number;
+      totalChunks: number;
+      fileCount: number;
+      failedCount: number;
+      totalFiles: number;
+      failedUrls: string[];
+    }
+  | { type: 'MD_ZIP_STREAM_CHUNK'; index: number; data: ArrayBuffer }
+  | { type: 'MD_ZIP_STREAM_DONE' }
+  | { type: 'MD_ZIP_STREAM_ERROR'; error: string };

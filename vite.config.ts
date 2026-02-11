@@ -144,6 +144,12 @@ export default defineConfig(({ mode }) => {
     plugins: [copyPopupAndLocalesPlugin(), manifestGeneratorPlugin(target, env)],
     define: {
       'process.env.NODE_ENV': JSON.stringify(mode),
+      // Build-time injected flags (avoid import.meta at runtime for IIFE bundles)
+      __MD_ENABLE_TELEMETRY__: JSON.stringify((env.VITE_ENABLE_TELEMETRY || 'true') !== 'false'),
+      __MD_STATS_API_URL__: JSON.stringify(env.VITE_STATS_API_URL || ''),
+      __MD_STATS_API_KEY__: JSON.stringify(env.VITE_STATS_API_KEY || ''),
+      __MD_ENABLE_DEBUG_LOGS__: JSON.stringify((env.VITE_ENABLE_DEBUG_LOGS || 'false') === 'true'),
+      __MD_GITHUB_REPO__: JSON.stringify(env.VITE_GITHUB_REPO || ''),
     },
   };
 });
