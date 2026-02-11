@@ -620,7 +620,7 @@ async function startDownload(selectedResources: MoodleResource[]): Promise<void>
         throw new Error(resp.type === 'MD_BUILD_ZIP_RESULT' ? resp.error : i18n('zipBuildFailed'));
       }
     } else {
-      const { zipBuffer, failedUrls, fileCount } = await buildZipStream(selectedResources, zipName);
+      const { zipBuffer, failedUrls } = await buildZipStream(selectedResources, zipName);
       if (failedUrls.length) lastFailedUrls = failedUrls;
 
       await saveZip(zipBuffer, zipName);

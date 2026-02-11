@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.15] - 2026-02-11
+## [1.1.1] - 2026-02-11
+
+### Fixed
+
+- Prevent corrupted ZIP downloads on Chrome by building and downloading ZIPs in the background service worker.
+- Keep ZIP byte streams consistent when transferring between background and popup.
+
+### Changed
+
+- Installation guide now points to the latest releases instead of local builds.
+
+## [1.1.0] - 2026-02-11
 
 ### Added
 
@@ -48,16 +59,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - None
-
-## [1.0.14] - 2026-02-11
-
-### Added
-
-- TODO
-
-
-## [1.1.0] - 2026-02-11
-### Fixed
-- build ZIPs in the service worker and save via downloads API
-- popup only triggers build in downloads mode
-- expand ZIP payload types

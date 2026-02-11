@@ -29,25 +29,23 @@ Browser extension (Chrome + Firefox) to **mass-download Moodle course materials*
 
 ## Installation
 
-### Chrome (Unpacked)
+### Chrome (Latest Release)
 
-1. Build: `npm run build:chrome`
-2. Open `chrome://extensions`
-3. Enable **Developer mode**
-4. **Load unpacked** → select `dist/chrome/`
+1. Go to the project’s **GitHub Releases** page.
+2. Download the latest **Chrome** release asset.
+3. Unzip it.
+4. Open `chrome://extensions` and enable **Developer mode**.
+5. Click **Load unpacked** and select the extracted folder that contains `manifest.json`.
 
-### Firefox (MV3 Service Worker)
+### Firefox (Latest Release)
 
-1. Build: `npm run build:firefox`
-2. Open `about:debugging#/runtime/this-firefox`
-3. **Load Temporary Add-on** → select `dist/firefox/manifest.json`
+1. Go to the project’s **GitHub Releases** page.
+2. Download the latest **Firefox** release asset (MV3 or compat).
+3. Unzip it.
+4. Open `about:debugging#/runtime/this-firefox`.
+5. Click **Load Temporary Add-on** and select the extracted `manifest.json`.
 
-### Firefox (Compat fallback)
-
-If your Firefox channel/version doesn’t support MV3 Service Workers reliably:
-
-1. Build: `npm run build:firefox:compat`
-2. Load `dist/firefox-compat/manifest.json` as temporary add-on.
+> If a signed `.xpi` is provided in the release, you can install it directly in Firefox instead.
 
 ## Usage
 
